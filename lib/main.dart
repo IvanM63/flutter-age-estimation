@@ -1,7 +1,12 @@
-import 'package:flutter/material.dart';
+import 'package:age_recog_pkl/view/home_page.dart';
 
-void main(List<String> args) {
-  runApp(MyApp());
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
+Future<void> main(List<String> args) async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -13,28 +18,10 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         fontFamily: "Nunito",
         primarySwatch: Colors.cyan,
+        visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      home: HomePage(),
-    );
-  }
-}
-
-class HomePage extends StatelessWidget {
-  const HomePage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text("Age REcognizer",
-            style: TextStyle(
-                fontSize: 20.0,
-                fontWeight: FontWeight.bold,
-                color: Colors.white)),
-      ),
-      body: Center(
-        child: Text("Hello World"),
-      ),
+      debugShowCheckedModeBanner: false,
+      home: const HomePage(),
     );
   }
 }
