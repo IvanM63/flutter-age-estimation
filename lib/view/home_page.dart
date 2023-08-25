@@ -1,3 +1,4 @@
+import 'package:age_recog_pkl/view/face_detector_view.dart';
 import 'package:age_recog_pkl/widget/detector_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
@@ -15,7 +16,7 @@ class HomePage extends StatelessWidget {
         title: const Text("Age Recognition"),
       ),
       key: GlobalKey(),
-      body: const DetectorWidget(),
+      body: FaceDetectorView(),
     );
   }
 }
