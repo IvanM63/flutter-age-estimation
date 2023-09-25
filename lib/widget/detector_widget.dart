@@ -52,6 +52,7 @@ class _DetectorWidgetState extends State<DetectorWidget>
       setState(() {});
       ScreenParams.previewSize = _controller.value.previewSize!;
     });
+
     //spawn new detector
     Detector.start().then((instance) {
       setState(() {
@@ -59,8 +60,8 @@ class _DetectorWidgetState extends State<DetectorWidget>
         _subscription = instance.resultsStream.stream.listen((values) {
           print(instance);
           setState(() {
-            _rect = values['recognitions'];
-            stats = values['stats'];
+            //_rect = values['recognitions'];
+            //stats = values['stats'];
           });
         });
       });
@@ -120,7 +121,7 @@ class _DetectorWidgetState extends State<DetectorWidget>
 
   /// Callback to receive each frame [CameraImage] perform inference on it
   void onLatestImageAvailable(CameraImage cameraImage) async {
-    _detector?.processFrame(cameraImage);
+    //_detector?.processFrame(cameraImage);
   }
 
   @override

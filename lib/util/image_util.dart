@@ -97,7 +97,7 @@ image_lib.Image convertJPEGToImage(CameraImage cameraImage) {
 image_lib.Image convertNV21ToImage(CameraImage cameraImage) {
   // Extract the bytes from the CameraImage
   final yuvBytes = cameraImage.planes[0].bytes;
-  final vuBytes = cameraImage.planes[1].bytes;
+  final vuBytes = cameraImage.planes[0].bytes;
 
   // Create a new Image instance
   final image = image_lib.Image(

@@ -50,6 +50,9 @@ import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_ml_kit/google_ml_kit.dart';
+import 'package:image/image.dart' as imglib;
+
+import '../util/image_util.dart';
 
 class CameraView extends StatefulWidget {
   CameraView(
@@ -63,7 +66,7 @@ class CameraView extends StatefulWidget {
       : super(key: key);
 
   final CustomPaint? customPaint;
-  final Function(InputImage inputImage) onImage;
+  final Function(InputImage inputImage, CameraImage cameraImage) onImage;
   final VoidCallback? onCameraFeedReady;
   final VoidCallback? onDetectorViewModeChanged;
   final Function(CameraLensDirection direction)? onCameraLensDirectionChanged;
@@ -360,7 +363,8 @@ class _CameraViewState extends State<CameraView> {
   void _processCameraImage(CameraImage image) {
     final inputImage = _inputImageFromCameraImage(image);
     if (inputImage == null) return;
-    widget.onImage(inputImage);
+
+    widget.onImage(inputImage, image);
   }
 
   final _orientations = {
@@ -415,6 +419,21 @@ class _CameraViewState extends State<CameraView> {
     // since format is constraint to nv21 or bgra8888, both only have one plane
     if (image.planes.length != 1) return null;
     final plane = image.planes.first;
+
+    // var imagea = _convertCameraImage(image);
+
+    // Navigator.push(context, MaterialPageRoute(builder: (context) {
+    //   return Scaffold(
+    //       appBar: AppBar(
+    //         title: Text("Hasil"),
+    //       ),
+    //       body: Center(
+    //           child: Container(
+    //         width: 300,
+    //         height: 300,
+    //         child: Image.memory(imglib.encodeJpg(imagea)),
+    //       )));
+    // }));
 
     // compose InputImage using bytes
     return InputImage.fromBytes(

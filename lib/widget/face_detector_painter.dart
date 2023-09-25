@@ -24,11 +24,11 @@ class FaceDetectorPainter extends CustomPainter {
     final Paint paint1 = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.0
-      ..color = Colors.red;
+      ..color = Colors.green;
     final Paint paint2 = Paint()
       ..style = PaintingStyle.fill
       ..strokeWidth = 1.0
-      ..color = Colors.green;
+      ..color = Colors.red;
 
     for (final Face face in faces) {
       final left = translateX(

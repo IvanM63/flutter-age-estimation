@@ -1,16 +1,23 @@
+import 'dart:async';
+
+import 'package:age_recog_pkl/service/age_service.dart';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 
+import '../service/detector_service.dart';
 import '../widget/face_detector_painter.dart';
 import 'detector_view.dart';
 
 class FaceDetectorView extends StatefulWidget {
+  const FaceDetectorView({super.key});
+
   @override
   State<FaceDetectorView> createState() => _FaceDetectorViewState();
 }
 
-class _FaceDetectorViewState extends State<FaceDetectorView> {
+class _FaceDetectorViewState extends State<FaceDetectorView>
+    with WidgetsBindingObserver {
   final FaceDetector _faceDetector = FaceDetector(
     options: FaceDetectorOptions(
       enableContours: true,
@@ -23,11 +30,33 @@ class _FaceDetectorViewState extends State<FaceDetectorView> {
   String? _text;
   var _cameraLensDirection = CameraLensDirection.front;
 
+  //tensor flow lite
+  Detector? _detector;
+  StreamSubscription? _subscription;
+  Map<String, String>? stats;
+
   @override
-  void dispose() {
-    _canProcess = false;
-    _faceDetector.close();
-    super.dispose();
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _initStateAsync();
+  }
+
+  void _initStateAsync() async {
+    //spawn new detector
+    Detector.start().then((instance) {
+      setState(() {
+        _detector = instance;
+        _subscription = instance.resultsStream.stream.listen((values) {
+          setState(() {
+            //_rect = values['recognitions'];
+            //stats = values['stats'];
+          });
+        });
+      });
+    });
+    //nanti saja duluj
   }
 
   @override
@@ -42,7 +71,8 @@ class _FaceDetectorViewState extends State<FaceDetectorView> {
     );
   }
 
-  Future<void> _processImage(InputImage inputImage) async {
+  Future<void> _processImage(
+      InputImage inputImage, CameraImage cameraImage) async {
     if (!_canProcess) return;
     if (_isBusy) return;
     _isBusy = true;
@@ -53,8 +83,12 @@ class _FaceDetectorViewState extends State<FaceDetectorView> {
     if (inputImage.metadata?.size != null &&
         inputImage.metadata?.rotation != null) {
       //Kalo face tidak sama null maka ada isinya bg
+
       if (faces.isNotEmpty) {
-        print(faces[0].boundingBox);
+        //print(cameraImage.format.group);
+
+        onLatestImageAvailable(cameraImage, faces[0]);
+        //_canProcess = false;
       }
 
       final painter = FaceDetectorPainter(
@@ -79,5 +113,33 @@ class _FaceDetectorViewState extends State<FaceDetectorView> {
     if (mounted) {
       setState(() {});
     }
+  }
+
+  void onLatestImageAvailable(CameraImage image, Face faceDetected) async {
+    _detector?.processFrame(image, faceDetected);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) async {
+    switch (state) {
+      case AppLifecycleState.inactive:
+        _detector?.stop();
+        _subscription?.cancel();
+        break;
+      case AppLifecycleState.resumed:
+        _initStateAsync();
+        break;
+      default:
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _canProcess = false;
+    _faceDetector.close();
+    _subscription?.cancel();
+    _detector?.stop();
+    super.dispose();
   }
 }

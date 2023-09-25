@@ -3,16 +3,23 @@
 // found in the LICENSE file.
 
 import 'dart:async';
+import 'dart:ffi';
 import 'dart:io';
 import 'dart:isolate';
+import 'dart:math';
+import 'dart:typed_data';
 
 import 'package:camera/camera.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:google_ml_kit/google_ml_kit.dart';
 import 'package:image/image.dart' as image_lib;
 import 'package:tflite_flutter/tflite_flutter.dart';
 
+import '../db/database_helper.dart';
 import '../models/recognition.dart';
+import '../models/user.model.dart';
 import '../util/image_util.dart';
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -70,13 +77,14 @@ class _Command {
 /// This class just sends and receives messages to the isolate.
 class Detector {
   static const String _modelPath = 'assets/face_model_v5.tflite';
-  static const String _labelPath = 'assets/labelmap.txt';
+  static const String _modelPath2 = 'assets/mobilefacenet.tflite';
+  //static const String _labelPath = 'assets/labelmap.txt';
 
-  Detector._(this._isolate, this._interpreter, this._labels);
+  Detector._(this._isolate, this._interpreter, this._interFaceRecog);
 
   final Isolate _isolate;
   late final Interpreter _interpreter;
-  late final List<String> _labels;
+  late final Interpreter _interFaceRecog;
 
   // To be used by detector (from UI) to send message to our Service ReceivePort
   late final SendPort _sendPort;
@@ -95,24 +103,21 @@ class Detector {
     final Isolate isolate =
         await Isolate.spawn(_DetectorServer._run, receivePort.sendPort);
 
-    final Detector result = Detector._(
-      isolate,
-      await _loadModel(),
-      await _loadLabels(),
-    );
+    final Detector result =
+        Detector._(isolate, await _loadModel1(), await _loadModel2());
     receivePort.listen((message) {
       result._handleCommand(message as _Command);
     });
     return result;
   }
 
-  static Future<Interpreter> _loadModel() async {
+  static Future<Interpreter> _loadModel1() async {
     final interpreterOptions = InterpreterOptions();
 
     // Use XNNPACK Delegate
-    // if (Platform.isAndroid) {
-    //   interpreterOptions.addDelegate(XNNPackDelegate());
-    // }
+    if (Platform.isAndroid) {
+      interpreterOptions.addDelegate(XNNPackDelegate());
+    }
 
     // Use Metal Delegate
     if (Platform.isIOS) {
@@ -125,14 +130,30 @@ class Detector {
     );
   }
 
-  static Future<List<String>> _loadLabels() async {
-    return (await rootBundle.loadString(_labelPath)).split('\n');
+  static Future<Interpreter> _loadModel2() async {
+    final interpreterOptions = InterpreterOptions();
+
+    // Use XNNPACK Delegate
+    if (Platform.isAndroid) {
+      interpreterOptions.addDelegate(XNNPackDelegate());
+    }
+
+    // Use Metal Delegate
+    if (Platform.isIOS) {
+      interpreterOptions.addDelegate(GpuDelegate());
+    }
+
+    return Interpreter.fromAsset(
+      _modelPath2,
+      //options: interpreterOptions..threads = 4,
+    );
   }
 
   /// Starts CameraImage processing
-  void processFrame(CameraImage cameraImage) {
+  void processFrame(CameraImage cameraImage, Face faceDetected) {
     if (_isReady) {
-      _sendPort.send(_Command(_Codes.detect, args: [cameraImage]));
+      _sendPort
+          .send(_Command(_Codes.detect, args: [cameraImage, faceDetected]));
     }
   }
 
@@ -152,7 +173,7 @@ class Detector {
         _sendPort.send(_Command(_Codes.init, args: [
           rootIsolateToken,
           _interpreter.address,
-          _labels,
+          _interFaceRecog.address
         ]));
       case _Codes.ready:
         _isReady = true;
@@ -178,12 +199,13 @@ class Detector {
 /// allows us to use plugins from background isolates.
 class _DetectorServer {
   /// Input size of image (height = width = 300)
-  static const int mlModelInputSize = 300;
+  static const int mlModelInputSize = 80;
+  static const int mlModelInputSizeFace = 112;
 
   /// Result confidence threshold
   static const double confidence = 0.5;
   Interpreter? _interpreter;
-  List<String>? _labels;
+  Interpreter? _interFaceRecog;
 
   _DetectorServer(this._sendPort);
 
@@ -225,17 +247,18 @@ class _DetectorServer {
         // ----------------------------------------------------------------------
         BackgroundIsolateBinaryMessenger.ensureInitialized(rootIsolateToken);
         _interpreter = Interpreter.fromAddress(command.args?[1] as int);
-        _labels = command.args?[2] as List<String>;
+        _interFaceRecog = Interpreter.fromAddress(command.args?[2] as int);
         _sendPort.send(const _Command(_Codes.ready));
       case _Codes.detect:
         _sendPort.send(const _Command(_Codes.busy));
-        _convertCameraImage(command.args?[0] as CameraImage);
+        _convertCameraImage(
+            command.args?[0] as CameraImage, command.args?[1] as Face);
       default:
         debugPrint('_DetectorService unrecognized command ${command.code}');
     }
   }
 
-  void _convertCameraImage(CameraImage cameraImage) {
+  void _convertCameraImage(CameraImage cameraImage, Face faceDetected) {
     var preConversionTime = DateTime.now().millisecondsSinceEpoch;
 
     convertCameraImageToImage(cameraImage).then((image) {
@@ -244,84 +267,37 @@ class _DetectorServer {
           image = image_lib.copyRotate(image, angle: 90);
         }
 
-        final results = analyseImage(image, preConversionTime);
+        final results = analyseImage(image, preConversionTime, faceDetected);
         _sendPort.send(_Command(_Codes.result, args: [results]));
       }
     });
   }
 
   Map<String, dynamic> analyseImage(
-      image_lib.Image? image, int preConversionTime) {
+      image_lib.Image? image, int preConversionTime, Face faceDetected) {
     var conversionElapsedTime =
         DateTime.now().millisecondsSinceEpoch - preConversionTime;
 
     var preProcessStart = DateTime.now().millisecondsSinceEpoch;
 
     /// Pre-process the image
-    /// Resizing image fpr model, [300, 300]
-    final imageInput = image_lib.copyResize(
-      image!,
-      width: mlModelInputSize,
-      height: mlModelInputSize,
-    );
+    /// Resizing image fpr model, [80, 80]
+    image_lib.Image croppedImage = _cropFace(image!, faceDetected);
+    image_lib.Image img =
+        image_lib.copyResizeCropSquare(croppedImage, size: mlModelInputSize);
 
-    // Creating matrix representation, [300, 300, 3]
-    final imageMatrix = List.generate(
-      imageInput.height,
-      (y) => List.generate(
-        imageInput.width,
-        (x) {
-          final pixel = imageInput.getPixel(x, y);
-          return [pixel.r, pixel.g, pixel.b];
-        },
-      ),
-    );
+    Float32List imageAsList = imageToByteListFloat32(img);
+
+    List input = imageAsList;
+    input = input.reshape([1, mlModelInputSize, mlModelInputSize, 3]);
 
     var preProcessElapsedTime =
         DateTime.now().millisecondsSinceEpoch - preProcessStart;
 
     var inferenceTimeStart = DateTime.now().millisecondsSinceEpoch;
 
-    final output = _runInference(imageMatrix);
-
-    // Location
-    final locationsRaw = output.first.first as List<List<double>>;
-
-    final List<Rect> locations = locationsRaw
-        .map((list) => list.map((value) => (value * mlModelInputSize)).toList())
-        .map((rect) => Rect.fromLTRB(rect[1], rect[0], rect[3], rect[2]))
-        .toList();
-
-    // Classes
-    final classesRaw = output.elementAt(1).first as List<double>;
-    final classes = classesRaw.map((value) => value.toInt()).toList();
-
-    // Scores
-    final scores = output.elementAt(2).first as List<double>;
-
-    // Number of detections
-    final numberOfDetectionsRaw = output.last.first as double;
-    final numberOfDetections = numberOfDetectionsRaw.toInt();
-
-    final List<String> classification = [];
-    for (var i = 0; i < numberOfDetections; i++) {
-      classification.add(_labels![classes[i]]);
-    }
-
-    /// Generate recognitions
-    List<Recognition> recognitions = [];
-    for (int i = 0; i < numberOfDetections; i++) {
-      // Prediction score
-      var score = scores[i];
-      // Label string
-      var label = classification[i];
-
-      if (score > confidence) {
-        recognitions.add(
-          Recognition(i, label, score, locations[i]),
-        );
-      }
-    }
+    //set output model
+    final output = _runInference(input);
 
     var inferenceElapsedTime =
         DateTime.now().millisecondsSinceEpoch - inferenceTimeStart;
@@ -330,7 +306,7 @@ class _DetectorServer {
         DateTime.now().millisecondsSinceEpoch - preConversionTime;
 
     return {
-      "recognitions": recognitions,
+      "recognitions": "a",
       "stats": <String, String>{
         'Conversion time:': conversionElapsedTime.toString(),
         'Pre-processing time:': preProcessElapsedTime.toString(),
@@ -341,12 +317,15 @@ class _DetectorServer {
     };
   }
 
-  /// Object detection main function
-  List<List<Object>> _runInference(
-    List<List<List<num>>> imageMatrix,
-  ) {
+  /// Face detection main function
+  Future<List<List<Object>>> _runInference(
+    List imageMatrix,
+  ) async {
+    //await Future.delayed(Duration(milliseconds: 2000));
+
+    //DatabaseHelper _dbHelper = DatabaseHelper.instance;
     // Set input tensor [1, 300, 300, 3]
-    final input = [imageMatrix];
+    final input = imageMatrix;
 
     // Set output tensor
     // Locations: [1, 10, 4]
@@ -360,7 +339,105 @@ class _DetectorServer {
       3: [0.0],
     };
 
-    _interpreter!.runForMultipleInputs([input], output);
+    //model output for multiple
+
+    Map<int, Object> outputMap = {};
+    List<List<double>> ageMap =
+        List.generate(1, (index) => List<double>.filled(4, 0.0));
+
+    List<List<double>> genderMap =
+        List.generate(1, (index) => List<double>.filled(2, 0.0));
+
+    outputMap[0] = ageMap;
+    outputMap[1] = genderMap;
+    print("START");
+
+    //Interpreter for age recog
+    _interpreter!.runForMultipleInputs([input], outputMap);
+
+    // //Interpreter for face recog
+    // List outputFace = List.generate(1, (index) => List.filled(192, 0));
+
+    // _interFaceRecog!.run(input, outputFace);
+
+    // outputFace = outputFace.reshape([192]);
+    // List _predictedData = [];
+    // _predictedData = List.from(outputFace);
+
+    // User? predictedFace = await _searchResult(_predictedData);
+
+    // if (predictedFace != null) {
+    //   print("PREDICTED: ${predictedFace.modelData}");
+    // } else {
+    //   User userToSave =
+    //       User(user: 'Person', password: '123', modelData: _predictedData);
+    //   await _dbHelper.insert(userToSave);
+    //   print("SUCCESS ADD USER");
+    // }
+
+    //print(outputFace);
+
+    print(
+        "AGE: ${ageMap[0][0]}|${ageMap[0][1]}|${ageMap[0][2]}|${ageMap[0][3]}");
+    print("GENDER: ${genderMap[0][0]}|${genderMap[0][1]}");
+
+    //_interpreter!.runForMultipleInputs([input], output);
     return output.values.toList();
+  }
+
+  image_lib.Image _cropFace(image_lib.Image image, Face faceDetected) {
+    double x = faceDetected.boundingBox.left - 10.0;
+    double y = faceDetected.boundingBox.top - 10.0;
+    double w = faceDetected.boundingBox.width + 10.0;
+    double h = faceDetected.boundingBox.height + 10.0;
+    return image_lib.copyCrop(image,
+        x: x.round(), y: y.round(), width: w.round(), height: h.round());
+  }
+
+  Float32List imageToByteListFloat32(image_lib.Image img) {
+    var convertedBytes =
+        Float32List(1 * mlModelInputSize * mlModelInputSize * 3);
+    var buffer = Float32List.view(convertedBytes.buffer);
+    int pixelIndex = 0;
+
+    for (var i = 0; i < mlModelInputSize; i++) {
+      for (var j = 0; j < mlModelInputSize; j++) {
+        var pixel = img.getPixel(j, i);
+        buffer[pixelIndex++] = (pixel.r - 128) / 128;
+        buffer[pixelIndex++] = (pixel.g - 128) / 128;
+        buffer[pixelIndex++] = (pixel.b - 128) / 128;
+      }
+    }
+    return convertedBytes.buffer.asFloat32List();
+  }
+
+  Future<User?> _searchResult(List predictedData) async {
+    DatabaseHelper _dbHelper = DatabaseHelper.instance;
+
+    List<User> users = await _dbHelper.queryAllUsers();
+    double minDist = 999;
+    double currDist = 0.0;
+    User? predictedResult;
+
+    print('users.length=> ${users.length}');
+
+    for (User u in users) {
+      currDist = _euclideanDistance(u.modelData, predictedData);
+      if (currDist <= confidence && currDist < minDist) {
+        minDist = currDist;
+        predictedResult = u;
+      }
+    }
+    return predictedResult;
+  }
+
+  double _euclideanDistance(List? e1, List? e2) {
+    if (e1 == null || e2 == null) throw Exception("Null argument");
+    print(e1.length);
+    double sum = 0.0;
+    for (int i = 0; i < e1.length; i++) {
+      sum += pow((e1[i] - e2[i]), 2);
+    }
+    return sqrt(sum);
   }
 }
