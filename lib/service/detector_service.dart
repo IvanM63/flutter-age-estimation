@@ -297,7 +297,9 @@ class _DetectorServer {
     var inferenceTimeStart = DateTime.now().millisecondsSinceEpoch;
 
     //set output model
+    //List output = [];
     final output = _runInference(input);
+    //print(output);
 
     var inferenceElapsedTime =
         DateTime.now().millisecondsSinceEpoch - inferenceTimeStart;
@@ -306,7 +308,8 @@ class _DetectorServer {
         DateTime.now().millisecondsSinceEpoch - preConversionTime;
 
     return {
-      "recognitions": "a",
+      "ageAndGender": output,
+      // "recognitions": "a",
       "stats": <String, String>{
         'Conversion time:': conversionElapsedTime.toString(),
         'Pre-processing time:': preProcessElapsedTime.toString(),
@@ -318,9 +321,9 @@ class _DetectorServer {
   }
 
   /// Face detection main function
-  Future<List<List<Object>>> _runInference(
+  Map<String, String> _runInference(
     List imageMatrix,
-  ) async {
+  ) {
     //await Future.delayed(Duration(milliseconds: 2000));
 
     //DatabaseHelper _dbHelper = DatabaseHelper.instance;
@@ -355,34 +358,45 @@ class _DetectorServer {
     //Interpreter for age recog
     _interpreter!.runForMultipleInputs([input], outputMap);
 
-    // //Interpreter for face recog
-    // List outputFace = List.generate(1, (index) => List.filled(192, 0));
+    Map<String, String> outputAll = {};
+    List<String> ageList = ["0-14yo", "15-40yo", "41-60yo", "61-100yo"];
+    List<String> genderList = ["Female", "Male"];
 
-    // _interFaceRecog!.run(input, outputFace);
+    var outputAge = ageMap[0][0];
+    var outputGender = genderMap[0][0];
+    var ageString;
+    var genderString;
 
-    // outputFace = outputFace.reshape([192]);
-    // List _predictedData = [];
-    // _predictedData = List.from(outputFace);
+    //Age Check Loop
+    for (int i = 0; i < ageMap[0].length; i++) {
+      if (outputAge < ageMap[0][i]) {
+        outputAge = ageMap[0][i];
+        ageString = ageList[i];
+      }
+    }
 
-    // User? predictedFace = await _searchResult(_predictedData);
+    //Gender Check Loop
+    for (int i = 0; i < genderMap[0].length; i++) {
+      if (outputAge < genderMap[0][i]) {
+        outputGender = genderMap[0][i];
+        genderString = genderList[i];
+      }
+    }
 
-    // if (predictedFace != null) {
-    //   print("PREDICTED: ${predictedFace.modelData}");
-    // } else {
-    //   User userToSave =
-    //       User(user: 'Person', password: '123', modelData: _predictedData);
-    //   await _dbHelper.insert(userToSave);
-    //   print("SUCCESS ADD USER");
-    // }
+    if (outputAge < 0.4) {
+      ageString = "Stay Still";
+    }
 
-    //print(outputFace);
+    //print(outputAge);
+    //print(
+    //"AGE: ${ageMap[0][0]}|${ageMap[0][1]}|${ageMap[0][2]}|${ageMap[0][3]}");
+    //print("GENDER: ${genderMap[0][0]}|${genderMap[0][1]}");
 
-    print(
-        "AGE: ${ageMap[0][0]}|${ageMap[0][1]}|${ageMap[0][2]}|${ageMap[0][3]}");
-    print("GENDER: ${genderMap[0][0]}|${genderMap[0][1]}");
-
-    //_interpreter!.runForMultipleInputs([input], output);
-    return output.values.toList();
+    return {
+      "Accuracy": outputAge.toString(),
+      "Age": ageString.toString(),
+      "Gender": genderString.toString(),
+    };
   }
 
   image_lib.Image _cropFace(image_lib.Image image, Face faceDetected) {
@@ -409,35 +423,5 @@ class _DetectorServer {
       }
     }
     return convertedBytes.buffer.asFloat32List();
-  }
-
-  Future<User?> _searchResult(List predictedData) async {
-    DatabaseHelper _dbHelper = DatabaseHelper.instance;
-
-    List<User> users = await _dbHelper.queryAllUsers();
-    double minDist = 999;
-    double currDist = 0.0;
-    User? predictedResult;
-
-    print('users.length=> ${users.length}');
-
-    for (User u in users) {
-      currDist = _euclideanDistance(u.modelData, predictedData);
-      if (currDist <= confidence && currDist < minDist) {
-        minDist = currDist;
-        predictedResult = u;
-      }
-    }
-    return predictedResult;
-  }
-
-  double _euclideanDistance(List? e1, List? e2) {
-    if (e1 == null || e2 == null) throw Exception("Null argument");
-    print(e1.length);
-    double sum = 0.0;
-    for (int i = 0; i < e1.length; i++) {
-      sum += pow((e1[i] - e2[i]), 2);
-    }
-    return sqrt(sum);
   }
 }

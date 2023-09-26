@@ -35,6 +35,11 @@ class _FaceDetectorViewState extends State<FaceDetectorView>
   StreamSubscription? _subscription;
   Map<String, String>? stats;
 
+  //Age output List
+  Map<String, String>? _ageAndGender;
+
+  List<Map<String, String>>? calculateRecognition = [];
+
   @override
   void initState() {
     // TODO: implement initState
@@ -50,13 +55,40 @@ class _FaceDetectorViewState extends State<FaceDetectorView>
         _detector = instance;
         _subscription = instance.resultsStream.stream.listen((values) {
           setState(() {
+            _ageAndGender = values['ageAndGender'];
             //_rect = values['recognitions'];
-            //stats = values['stats'];
+            stats = values['stats'];
           });
         });
       });
     });
-    //nanti saja duluj
+  }
+
+  Future<void> _dialogBuilder(BuildContext context) {
+    return showDialog<void>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Berhasil Menambahkan Data'),
+          content: Text("Accuracy: ${_ageAndGender!["Accuracy"]!} \n"
+              "Age: ${_ageAndGender!["Age"]} \n"
+              "Gender: ${_ageAndGender!["Gender"]} \n"),
+          actions: <Widget>[
+            TextButton(
+              style: TextButton.styleFrom(
+                textStyle: Theme.of(context).textTheme.labelLarge,
+              ),
+              child: const Text('Pindai Lagi'),
+              onPressed: () {
+                Navigator.of(context).pop();
+                _canProcess = true;
+                calculateRecognition!.clear();
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -76,9 +108,6 @@ class _FaceDetectorViewState extends State<FaceDetectorView>
     if (!_canProcess) return;
     if (_isBusy) return;
     _isBusy = true;
-    setState(() {
-      _text = '';
-    });
     final faces = await _faceDetector.processImage(inputImage);
     if (inputImage.metadata?.size != null &&
         inputImage.metadata?.rotation != null) {
@@ -86,8 +115,23 @@ class _FaceDetectorViewState extends State<FaceDetectorView>
 
       if (faces.isNotEmpty) {
         //print(cameraImage.format.group);
-
         onLatestImageAvailable(cameraImage, faces[0]);
+
+        if (_ageAndGender != null) {
+          calculateRecognition?.add(_ageAndGender!);
+          //print(_ageAndGender!["Accuracy"]);
+          //print(_ageAndGender);
+
+          print("There is ${calculateRecognition!.length}");
+          if (calculateRecognition!.length > 10) {
+            if (_ageAndGender != null) {
+              _dialogBuilder(context);
+            }
+
+            _canProcess = false;
+          }
+        }
+
         //_canProcess = false;
       }
 
