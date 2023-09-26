@@ -1,11 +1,13 @@
-import 'package:age_recog_pkl/view/home_page.dart';
+import 'package:age_recog_pkl/view/navigation.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:firebase_core/firebase_core.dart';
 
 Future<void> main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+  await Firebase.initializeApp;
   runApp(const MyApp());
 }
 
@@ -17,11 +19,11 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       theme: ThemeData(
         fontFamily: "Nunito",
-        primarySwatch: Colors.cyan,
+        primarySwatch: Colors.red,
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
       debugShowCheckedModeBanner: false,
-      home: const HomePage(),
+      home: const Navigation(),
     );
   }
 }

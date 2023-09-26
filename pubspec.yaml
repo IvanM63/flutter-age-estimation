@@ -47,6 +47,12 @@ dependencies:
   path: ^1.8.3
   path_provider: ^2.0.15
   sqflite: ^2.3.0
+  circle_nav_bar: ^2.0.1+1
+  intl: ^0.18.1
+  syncfusion_flutter_charts: ^23.1.36
+  firebase_core: ^2.16.0
+  horizontal_data_table: ^4.3.1
+  firebase_database: ^10.2.6
   #bitmap: ^0.1.3
   
   

@@ -85,7 +85,8 @@ class _FaceDetectorViewState extends State<FaceDetectorView>
       //Kalo face tidak sama null maka ada isinya bg
 
       if (faces.isNotEmpty) {
-        //print(cameraImage.format.group);
+        var asd = cameraImage.format.group;
+        print("testistus : $asd");
 
         onLatestImageAvailable(cameraImage, faces[0]);
         //_canProcess = false;
