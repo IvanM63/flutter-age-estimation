@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "841540555936",
+    "firebase_url": "https://age-estim-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "age-estim",
+    "storage_bucket": "age-estim.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:841540555936:android:1bc370130f3d5ea1f125c5",
+        "android_client_info": {
+          "package_name": "com.example.age_recog_pkl"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAimjJUsd0UbSjOppBSeMcqhR9KPO3K6MY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
