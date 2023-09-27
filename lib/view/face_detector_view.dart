@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:age_recog_pkl/service/age_service.dart';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
@@ -38,7 +37,17 @@ class _FaceDetectorViewState extends State<FaceDetectorView>
   //Age output List
   Map<String, String>? _ageAndGender;
 
-  List<Map<String, String>>? calculateRecognition = [];
+  List<List<double>> countAgeAccuracy = [
+    [0, 0.0],
+    [0, 0.0],
+    [0, 0.0],
+    [0, 0.0]
+  ];
+
+  List<Map<String, String>>? recognitionList = [];
+
+  List<String> ageList = ["0-14yo", "15-40yo", "41-60yo", "61-100yo"];
+  List<String> genderList = ["Female", "Male"];
 
   @override
   void initState() {
@@ -65,13 +74,59 @@ class _FaceDetectorViewState extends State<FaceDetectorView>
   }
 
   Future<void> _dialogBuilder(BuildContext context) {
+    //loop recognition list
+    for (int i = 0; i < recognitionList!.length; i++) {
+      if (recognitionList![i]["Age"] == "0-14yo") {
+        countAgeAccuracy[0][0] += 1;
+        countAgeAccuracy[0][1] +=
+            double.parse(recognitionList![i]["Accuracy"]!);
+        if (countAgeAccuracy[0][1] != 0) {
+          countAgeAccuracy[0][1] /= 2;
+        }
+      } else if (recognitionList![i]["Age"] == "15-40yo") {
+        countAgeAccuracy[1][0] += 1;
+        countAgeAccuracy[1][1] +=
+            double.parse(recognitionList![i]["Accuracy"]!);
+        if (countAgeAccuracy[1][1] != 0) {
+          countAgeAccuracy[1][1] /= 2;
+        }
+      } else if (recognitionList![i]["Age"] == "40-60yo") {
+        countAgeAccuracy[2][0] += 1;
+        countAgeAccuracy[2][1] +=
+            double.parse(recognitionList![i]["Accuracy"]!);
+        if (countAgeAccuracy[2][1] != 0) {
+          countAgeAccuracy[2][1] /= 2;
+        }
+      } else {
+        countAgeAccuracy[3][0] += 1;
+        countAgeAccuracy[3][1] +=
+            double.parse(recognitionList![i]["Accuracy"]!);
+        if (countAgeAccuracy[3][1] != 0) {
+          countAgeAccuracy[3][1] /= 2;
+        }
+      }
+    }
+
+    var finalAge = ageList[0];
+    var finalAgeCount = 0.0;
+    var finalAccuracy = 0.0;
+
+    for (int i = 0; i < countAgeAccuracy!.length; i++) {
+      if (finalAgeCount < countAgeAccuracy[i][0]) {
+        finalAge = ageList[i];
+        finalAgeCount = countAgeAccuracy[i][0];
+        finalAccuracy = countAgeAccuracy[i][1];
+      }
+    }
+
+    print(countAgeAccuracy);
     return showDialog<void>(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('Berhasil Menambahkan Data'),
-          content: Text("Accuracy: ${_ageAndGender!["Accuracy"]!} \n"
-              "Age: ${_ageAndGender!["Age"]} \n"
+          content: Text("Accuracy: $finalAccuracy \n"
+              "Age: $finalAge \n"
               "Gender: ${_ageAndGender!["Gender"]} \n"),
           actions: <Widget>[
             TextButton(
@@ -82,7 +137,13 @@ class _FaceDetectorViewState extends State<FaceDetectorView>
               onPressed: () {
                 Navigator.of(context).pop();
                 _canProcess = true;
-                calculateRecognition!.clear();
+                recognitionList!.clear();
+                countAgeAccuracy = [
+                  [0, 0.0],
+                  [0, 0.0],
+                  [0, 0.0],
+                  [0, 0.0]
+                ];
               },
             ),
           ],
@@ -118,12 +179,12 @@ class _FaceDetectorViewState extends State<FaceDetectorView>
         onLatestImageAvailable(cameraImage, faces[0]);
 
         if (_ageAndGender != null) {
-          calculateRecognition?.add(_ageAndGender!);
+          recognitionList?.add(_ageAndGender!);
           //print(_ageAndGender!["Accuracy"]);
           //print(_ageAndGender);
 
-          print("There is ${calculateRecognition!.length}");
-          if (calculateRecognition!.length > 10) {
+          //print("There is ${recognitionList!.length}");
+          if (recognitionList!.length > 10) {
             if (_ageAndGender != null) {
               _dialogBuilder(context);
             }

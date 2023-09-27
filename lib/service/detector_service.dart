@@ -18,7 +18,6 @@ import 'package:image/image.dart' as image_lib;
 import 'package:tflite_flutter/tflite_flutter.dart';
 
 import '../db/database_helper.dart';
-import '../models/recognition.dart';
 import '../models/user.model.dart';
 import '../util/image_util.dart';
 
@@ -353,7 +352,7 @@ class _DetectorServer {
 
     outputMap[0] = ageMap;
     outputMap[1] = genderMap;
-    print("START");
+    //print("START");
 
     //Interpreter for age recog
     _interpreter!.runForMultipleInputs([input], outputMap);
@@ -383,14 +382,14 @@ class _DetectorServer {
       }
     }
 
-    if (outputAge < 0.4) {
-      ageString = "Stay Still";
-    }
+    // if (outputAge < 0.33) {
+    //   ageString = "Stay Still";
+    // }
 
     //print(outputAge);
-    //print(
-    //"AGE: ${ageMap[0][0]}|${ageMap[0][1]}|${ageMap[0][2]}|${ageMap[0][3]}");
-    //print("GENDER: ${genderMap[0][0]}|${genderMap[0][1]}");
+    // print(
+    //     "AGE: ${ageMap[0][0]}|${ageMap[0][1]}|${ageMap[0][2]}|${ageMap[0][3]}");
+    // print("GENDER: ${genderMap[0][0]}|${genderMap[0][1]}");
 
     return {
       "Accuracy": outputAge.toString(),
