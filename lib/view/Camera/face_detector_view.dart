@@ -1,16 +1,24 @@
 import 'dart:async';
 
+import 'package:age_recog_pkl/models/visitor.model.dart';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
+import 'package:intl/intl.dart';
 
-import '../service/detector_service.dart';
-import '../widget/face_detector_painter.dart';
+import '../../controller/plasa_controller.dart';
+import '../../controller/visitor_controller.dart';
+import '../../service/detector_service.dart';
+import '../../util/face_detector_painter.dart';
 import 'detector_view.dart';
 
 class FaceDetectorView extends StatefulWidget {
-  const FaceDetectorView({super.key});
+  const FaceDetectorView({super.key, required this.index, plasaController})
+      : _plasaController = plasaController;
 
+  final int index;
+  final PlasaController _plasaController;
   @override
   State<FaceDetectorView> createState() => _FaceDetectorViewState();
 }
@@ -48,6 +56,20 @@ class _FaceDetectorViewState extends State<FaceDetectorView>
 
   List<String> ageList = ["0-14yo", "15-40yo", "41-60yo", "61-100yo"];
   List<String> genderList = ["Female", "Male"];
+
+  final VisitorController _visitorController = Get.put(VisitorController());
+  final Visitor visitorTes = Visitor(
+    plasa_id: 0,
+    acc: "0.892123",
+    date: "Kamis",
+    time: "12:00",
+    ageRange: "15-40yo",
+    gender: "Laki-Laki",
+  );
+
+  var finalAge = "0-14yo";
+  var finalAgeCount = 0.0;
+  var finalAccuracy = 0.0;
 
   @override
   void initState() {
@@ -107,10 +129,6 @@ class _FaceDetectorViewState extends State<FaceDetectorView>
       }
     }
 
-    var finalAge = ageList[0];
-    var finalAgeCount = 0.0;
-    var finalAccuracy = 0.0;
-
     for (int i = 0; i < countAgeAccuracy!.length; i++) {
       if (finalAgeCount < countAgeAccuracy[i][0]) {
         finalAge = ageList[i];
@@ -119,7 +137,10 @@ class _FaceDetectorViewState extends State<FaceDetectorView>
       }
     }
 
-    print(countAgeAccuracy);
+    //print(countAgeAccuracy);
+
+    //add to database
+    _addTaskToDb();
     return showDialog<void>(
       context: context,
       builder: (BuildContext context) {
@@ -162,6 +183,23 @@ class _FaceDetectorViewState extends State<FaceDetectorView>
       initialCameraLensDirection: _cameraLensDirection,
       onCameraLensDirectionChanged: (value) => _cameraLensDirection = value,
     );
+  }
+
+  _addTaskToDb() async {
+    var value = await _visitorController.addVisitor(
+        visitor: Visitor(
+      acc: finalAccuracy.toString(),
+      ageRange: finalAge,
+      date: DateFormat("yyyy-MM-dd").format(DateTime.now()),
+      gender: _ageAndGender!["Gender"],
+      plasa_id: widget._plasaController.plasaList[widget.index].id,
+    ));
+
+    //Update plasa pengunjung
+    var plasa = widget._plasaController.plasaList[widget.index];
+    plasa.pengunjung = (int.parse(plasa.pengunjung!) + 1).toString();
+    widget._plasaController.updatePlasa(plasa);
+    //print("MY ID IS: " + "$value");
   }
 
   Future<void> _processImage(

@@ -6,7 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:google_ml_kit/google_ml_kit.dart';
 import 'package:image/image.dart' as imglib;
 
-import '../util/image_util.dart';
+import '../../util/image_util.dart';
 
 class CameraView extends StatefulWidget {
   CameraView(

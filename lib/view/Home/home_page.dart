@@ -1,10 +1,11 @@
-import 'package:age_recog_pkl/view/face_detector_view.dart';
+import 'package:age_recog_pkl/view/Camera/face_detector_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
+import 'package:intl/intl.dart';
 
 import 'package:syncfusion_flutter_charts/charts.dart';
 
-import '../models/screen_params.dart';
+import '../../models/screen_params.dart';
 
 List<Map<String, String>> tess = [
   {

@@ -6,7 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:google_ml_kit/google_ml_kit.dart';
 import 'package:image_picker/image_picker.dart';
 
-import 'utils.dart';
+import '../utils.dart';
 
 class GalleryView extends StatefulWidget {
   GalleryView(

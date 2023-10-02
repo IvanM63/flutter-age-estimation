@@ -1,31 +1,33 @@
 import 'dart:io';
 
+import 'package:age_recog_pkl/models/plasa.model.dart';
 import 'package:path/path.dart';
-import 'package:sqflite/sqflite.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:sqflite/sqflite.dart';
 
-import '../models/user.model.dart';
+import '../models/visitor.model.dart';
 
-class DatabaseHelper {
+class DBHelper {
+  static Database? _db;
   static final _databaseName = "MyDatabase.db";
-  static final _databaseVersion = 1;
+  static final int _databaseVersion = 1;
+  static final String _tablePlasas = "plasas";
+  static final String _tableVisitors = "visitors";
 
-  static final table = 'users';
-  static final columnId = 'id';
-  static final columnUser = 'user';
-  static final columnPassword = 'password';
-  static final columnModelData = 'model_data';
+  DBHelper._privateConstructor();
 
-  DatabaseHelper._privateConstructor();
-  static final DatabaseHelper instance = DatabaseHelper._privateConstructor();
+  static final DBHelper instance = DBHelper._privateConstructor();
 
-  static late Database _database;
   Future<Database> get database async {
-    _database = await _initDatabase();
-    return _database;
+    if (_db != null) return _db!;
+    // lazily instantiate the db the first time it is accessed
+    _db = await _initDatabase();
+    return _db!;
   }
 
+  // this opens the database and creates it if it doesn't exist
   _initDatabase() async {
+    print("init Database");
     Directory documentsDirectory = await getApplicationDocumentsDirectory();
     String path = join(documentsDirectory.path, _databaseName);
     return await openDatabase(path,
@@ -33,29 +35,85 @@ class DatabaseHelper {
   }
 
   Future _onCreate(Database db, int version) async {
-    await db.execute('''
-          CREATE TABLE $table (
-            $columnId INTEGER PRIMARY KEY,
-            $columnUser TEXT NOT NULL,
-            $columnPassword TEXT NOT NULL,
-            $columnModelData TEXT NOT NULL
-          )
-          ''');
+// SQL code to create User table
+    await db.execute('''  
+    CREATE TABLE $_tablePlasas(id INTEGER PRIMARY KEY AUTOINCREMENT, 
+    name STRING, 
+    jalan TEXT, 
+    kecamatan STRING, 
+    kota STRING, 
+    pengunjung STRING, 
+    image STRING
+     )''');
+// SQL code to create Blog table
+    await db.execute('''  
+    CREATE TABLE $_tableVisitors(id INTEGER PRIMARY KEY AUTOINCREMENT, 
+    plasa_id INTEGER, 
+    acc STRING, 
+    date STRING, 
+    time STRING, 
+    ageRange STRING, 
+    gender STRING, 
+    FOREIGN KEY (plasa_id) REFERENCES plasa (id)
+     )''');
+    print("Created TWO TABLE");
   }
 
-  Future<int> insert(User user) async {
-    Database db = await instance.database;
-    return await db.insert(table, user.toMap());
+  // static Future<void> initDb() async {
+  //   if (_db != null) {
+  //     return;
+  //   }
+  //   try {
+  //     String _path = await getDatabasesPath() + "plasas.db";
+  //     _db =
+  //         await openDatabase(_path, version: _version, onCreate: (db, version) {
+  //       //print("Create new table");
+  //       return db.execute(
+  //           "CREATE TABLE $_tablePlasas(id INTEGER PRIMARY KEY AUTOINCREMENT, name STRING, jalan TEXT, kecamatan STRING, kota STRING, pengunjung STRING, image STRING)");
+  //     });
+  //     //create table for visitors
+  //     await _db!.execute(
+  //         "CREATE TABLE $_tableVisitors(id INTEGER PRIMARY KEY AUTOINCREMENT, plasa_id INTEGER NOT NULL, acc STRING, date STRING, time STRING, ageRange STRING, gender STRING, FOREIGN KEY (plasa_id) REFERENCES plasa (id))");
+  //   } catch (e) {
+  //     print(e);
+  //   }
+  // }
+
+  static Future<int> insertPlasa(Plasa? plasa) async {
+    //print("insert function terrpanggil");
+    return await _db!.insert(_tablePlasas, plasa!.toJson());
   }
 
-  Future<List<User>> queryAllUsers() async {
-    Database db = await instance.database;
-    List<Map<String, dynamic>> users = await db.query(table);
-    return users.map((u) => User.fromMap(u)).toList();
+  //update plasa
+  static Future<int> updatePlasa(Plasa? plasa) async {
+    //print("insert function terrpanggil");
+    return await _db!.update(_tablePlasas, plasa!.toJson(),
+        where: "id=?", whereArgs: [plasa.id]);
   }
 
-  Future<int> deleteAll() async {
-    Database db = await instance.database;
-    return await db.delete(table);
+  static Future<int> insertVisitor(Visitor? visitor) async {
+    //print("insert function terrpanggil");
+    return await _db!.insert(_tableVisitors, visitor!.toJson());
+  }
+
+  static Future<List<Map<String, dynamic>>> queryPlasa() async {
+    return await _db!.query(_tablePlasas);
+  }
+
+  static Future<List<Map<String, dynamic>>> queryVisitor() async {
+    return await _db!.query(_tableVisitors);
+  }
+
+  static delete(Plasa plasa) async {
+    await _db!.delete(_tablePlasas, where: "id=?", whereArgs: [plasa.id]);
+  }
+
+  static update(int id) async {
+    await _db!
+        .rawUpdate("UPDATE $_tablePlasas SET isCompleted = 1 WHERE id = $id");
+  }
+
+  static queryVisitorByPlasaId(int id) {
+    return _db!.query(_tableVisitors, where: "plasa_id=?", whereArgs: [id]);
   }
 }

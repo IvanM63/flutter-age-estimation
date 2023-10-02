@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
-import 'package:age_recog_pkl/view/face_detector_view.dart';
+import 'package:age_recog_pkl/view/Camera/face_detector_view.dart';
 
 class KameraPage extends StatefulWidget {
   const KameraPage({super.key});
@@ -119,10 +119,10 @@ class _KameraPageState extends State<KameraPage> {
       body: Center(
         child: Column(
           children: [
-            Container(
-              height: MediaQuery.of(context).size.height * 2 / 3,
-              child: FaceDetectorView(),
-            ),
+            // Container(
+            //   height: MediaQuery.of(context).size.height * 2 / 3,
+            //   child: FaceDetectorView(),
+            // ),
           ],
         ),
       ),
