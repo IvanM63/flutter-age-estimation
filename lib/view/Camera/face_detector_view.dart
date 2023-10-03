@@ -154,6 +154,24 @@ class _FaceDetectorViewState extends State<FaceDetectorView>
               style: TextButton.styleFrom(
                 textStyle: Theme.of(context).textTheme.labelLarge,
               ),
+              child: const Text('Selesai'),
+              onPressed: () {
+                Navigator.of(context).pop();
+                Navigator.of(context).pop();
+                _canProcess = true;
+                recognitionList!.clear();
+                countAgeAccuracy = [
+                  [0, 0.0],
+                  [0, 0.0],
+                  [0, 0.0],
+                  [0, 0.0]
+                ];
+              },
+            ),
+            TextButton(
+              style: TextButton.styleFrom(
+                textStyle: Theme.of(context).textTheme.labelLarge,
+              ),
               child: const Text('Pindai Lagi'),
               onPressed: () {
                 Navigator.of(context).pop();

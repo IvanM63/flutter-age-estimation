@@ -100,6 +100,13 @@ class DBHelper {
     return await _db!.query(_tablePlasas);
   }
 
+  //Get plasa by id
+  static Future<Plasa> getPlasaById(int id) async {
+    List<Map<String, dynamic>> _plasaList =
+        await _db!.query(_tablePlasas, where: "id=?", whereArgs: [id]);
+    return Plasa.fromJson(_plasaList[0]);
+  }
+
   static Future<List<Map<String, dynamic>>> queryVisitor() async {
     return await _db!.query(_tableVisitors);
   }

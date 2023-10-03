@@ -20,6 +20,12 @@ class PlasaController extends GetxController {
         .assignAll(_plasaList.map((data) => Plasa.fromJson(data)).toList());
   }
 
+  //Get Plasa by id
+  getPlasaById(int id) async {
+    Plasa plasa = await DBHelper.getPlasaById(id);
+    return plasa;
+  }
+
   Future<int> addPlasa({Plasa? plasa}) async {
     return await DBHelper.insertPlasa(plasa);
   }

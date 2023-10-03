@@ -1,3 +1,4 @@
+import 'package:age_recog_pkl/models/plasa.model.dart';
 import 'package:age_recog_pkl/view/Camera/Add%20Plasa/add_plasa_view.dart';
 import 'package:age_recog_pkl/view/Camera/plasa_card.dart';
 import 'package:flutter/material.dart';
@@ -16,6 +17,32 @@ class CameraHome extends StatefulWidget {
 class _CameraHomeState extends State<CameraHome> {
   //Plasa Controller
   final PlasaController _plasaController = Get.put(PlasaController());
+
+  List<Plasa> _foundPlasa = [];
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    _foundPlasa = _plasaController.plasaList;
+    super.initState();
+  }
+
+  void _runFilter(String keyword) {
+    List<Plasa> results = [];
+    if (keyword.isEmpty) {
+      results = _plasaController.plasaList;
+    } else {
+      results = _plasaController.plasaList
+          .where((plasa) =>
+              plasa.name!.toLowerCase().contains(keyword.toLowerCase()))
+          .toList();
+    }
+
+    setState(() {
+      _foundPlasa = results;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     _plasaController.getAllPlasa();
@@ -60,6 +87,9 @@ class _CameraHomeState extends State<CameraHome> {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 20, vertical: 22),
                     child: TextField(
+                      onChanged: (value) {
+                        _runFilter(value);
+                      },
                       decoration: InputDecoration(
                         filled: true,
                         fillColor: Colors.white,
@@ -97,19 +127,17 @@ class _CameraHomeState extends State<CameraHome> {
                   height: 20,
                 ),
                 Expanded(
-                  child: Obx(() {
-                    return ListView.builder(
-                        itemCount: _plasaController.plasaList.length,
-                        itemBuilder: (context, index) {
-                          return Padding(
-                              padding: const EdgeInsets.only(
-                                  left: 20, right: 20, bottom: 10),
-                              child: PlasaCard(
-                                index: index,
-                                plasaController: _plasaController,
-                              ));
-                        });
-                  }),
+                  child: ListView.builder(
+                      itemCount: _foundPlasa.length,
+                      itemBuilder: (context, index) {
+                        return Padding(
+                            padding: const EdgeInsets.only(
+                                left: 20, right: 20, bottom: 10),
+                            child: PlasaCard(
+                              index: index,
+                              plasaController: _plasaController,
+                            ));
+                      }),
                 )
               ],
             ),

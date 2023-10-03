@@ -193,7 +193,7 @@ class _AddPlasaState extends State<AddPlasa> {
             kecamatan: _kecamatanController.text,
             kota: _kotaController.text,
             image: _selectedImage!.path));
-    print("MY ID IS: " + "$value");
+    //print("MY ID IS: " + "$value");
   }
 
   _validateForm() async {
@@ -208,6 +208,7 @@ class _AddPlasaState extends State<AddPlasa> {
       await _plasaController.getAllPlasa();
       //Navigate back to home page
       Navigator.of(context).pop();
+      setState(() {});
     } else {
       //show snackbar
       ScaffoldMessenger.of(context).showSnackBar(

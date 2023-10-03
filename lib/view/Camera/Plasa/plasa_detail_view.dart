@@ -31,6 +31,21 @@ class _PlasaDetailState extends State<PlasaDetail> {
   //Visitor Controller
   final VisitorController _visitorController = Get.put(VisitorController());
 
+  //Quick info two dimensional array
+  List<List<dynamic>> _quickInfo = [
+    ["0-14yo", "0", Icons.people],
+    ["15-40yo", "0", Icons.people],
+    ["41-60yo", "0", Icons.people],
+    ["61-100yo", "0", Icons.people],
+    ["Male", "0", Icons.male],
+    ["Female", "0", Icons.female],
+  ];
+
+  Future<void> calculateQuickInfo() async {
+    await _getAllVisitors();
+    _getQuickInfoStats();
+  }
+
   _getAllVisitors() async {
     _visitorList = await _visitorController.getVisitorByPlasaId(
         widget._plasaController.plasaList[widget.index].id!);
@@ -41,6 +56,36 @@ class _PlasaDetailState extends State<PlasaDetail> {
     _pengunjungController.sink.add(newValue);
     //print("CALLED");
     //print(await _visitorController.visitorList[1].toJson());
+
+    //
+  }
+
+  _getQuickInfoStats() {
+    //Reset to zero
+    _quickInfo = [
+      ["0-14yo", "0", Icons.people],
+      ["15-40yo", "0", Icons.people],
+      ["41-60yo", "0", Icons.people],
+      ["61-100yo", "0", Icons.people],
+      ["Male", "0", Icons.male],
+      ["Female", "0", Icons.female]
+    ]; //visitor list loop
+    for (var i = 0; i < _visitorList.length; i++) {
+      if (_visitorList[i].ageRange == "0-14yo") {
+        _quickInfo[0][1] = (int.parse(_quickInfo[0][1]) + 1).toString();
+      } else if (_visitorList[i].ageRange == "15-40yo") {
+        _quickInfo[1][1] = (int.parse(_quickInfo[1][1]) + 1).toString();
+      } else if (_visitorList[i].ageRange == "41-60yo") {
+        _quickInfo[2][1] = (int.parse(_quickInfo[2][1]) + 1).toString();
+      } else if (_visitorList[i].ageRange == "61-100yo") {
+        _quickInfo[3][1] = (int.parse(_quickInfo[3][1]) + 1).toString();
+      } else if (_visitorList[i].gender == "Male") {
+        _quickInfo[4][1] = (int.parse(_quickInfo[4][1]) + 1).toString();
+      } else if (_visitorList[i].gender == "Female") {
+        _quickInfo[5][1] = (int.parse(_quickInfo[5][1]) + 1).toString();
+      }
+      // print("Gender: ${_visitorList[i].gender}");
+    }
   }
 
   // Create a StreamController to manage _pengunjung updates
@@ -51,7 +96,8 @@ class _PlasaDetailState extends State<PlasaDetail> {
   void initState() {
     // TODO: implement initState
     super.initState();
-    _getAllVisitors();
+    //_getAllVisitors();
+    //_getQuickInfoStats();
   }
 
   @override
@@ -64,6 +110,8 @@ class _PlasaDetailState extends State<PlasaDetail> {
   @override
   Widget build(BuildContext context) {
     //print(DateFormat("yyyy-MM-dd").format(DateTime.now()));
+
+    // print(_quickInfo);
     return Scaffold(
         appBar: _appBar(),
         body: SingleChildScrollView(
@@ -129,6 +177,64 @@ class _PlasaDetailState extends State<PlasaDetail> {
               ],
             ),
           ),
+          //Quick info
+          FutureBuilder<void>(
+              future: calculateQuickInfo(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.done) {
+                  return SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Padding(
+                      padding:
+                          EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                      child: Row(
+                        children: Map.fromIterable(_quickInfo, key: (e) => e[0])
+                            .values
+                            .map((e) => Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 10),
+                                  child: Column(
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Icon(
+                                            e[2],
+                                            color: Colors.black,
+                                            size: 14,
+                                          ),
+                                          const SizedBox(
+                                            width: 5,
+                                          ),
+                                          Text(
+                                            e[0],
+                                            style: TextStyle(
+                                                fontSize: 15,
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.black),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(
+                                        height: 3,
+                                      ),
+                                      Text(
+                                        e[1],
+                                        style: TextStyle(
+                                            fontSize: 14, color: Colors.black),
+                                      ),
+                                    ],
+                                  ),
+                                ))
+                            .toList(),
+                      ),
+                    ),
+                  );
+                } else {
+                  return const Center(
+                    child: CircularProgressIndicator(),
+                  );
+                }
+              }),
           //Daftar Pengunjung
           Padding(
             padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
@@ -176,70 +282,67 @@ class _PlasaDetailState extends State<PlasaDetail> {
             ),
           ),
 
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: FutureBuilder(
-              future: _getAllVisitors(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.done) {
-                  return DataTable(
-                    dataTextStyle: TextStyle(fontSize: 10, color: Colors.black),
-                    headingTextStyle:
-                        TextStyle(fontSize: 12, color: Colors.black),
-                    columns: const <DataColumn>[
-                      DataColumn(
-                        label: Expanded(
-                          child: Text(
-                            'Tanggal',
-                            style: TextStyle(fontStyle: FontStyle.italic),
-                          ),
+          FutureBuilder(
+            future: _getAllVisitors(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.done) {
+                return DataTable(
+                  dataTextStyle: TextStyle(fontSize: 10, color: Colors.black),
+                  headingTextStyle:
+                      TextStyle(fontSize: 12, color: Colors.black),
+                  columns: const <DataColumn>[
+                    DataColumn(
+                      label: Expanded(
+                        child: Text(
+                          'Tanggal',
+                          style: TextStyle(fontStyle: FontStyle.italic),
                         ),
                       ),
-                      DataColumn(
-                        label: Expanded(
-                          child: Text(
-                            'Accuracy',
-                            style: TextStyle(fontStyle: FontStyle.italic),
-                          ),
+                    ),
+                    DataColumn(
+                      label: Expanded(
+                        child: Text(
+                          'Accuracy',
+                          style: TextStyle(fontStyle: FontStyle.italic),
                         ),
                       ),
-                      DataColumn(
-                        label: Expanded(
-                          child: Text(
-                            'Age',
-                            style: TextStyle(fontStyle: FontStyle.italic),
-                          ),
+                    ),
+                    DataColumn(
+                      label: Expanded(
+                        child: Text(
+                          'Age',
+                          style: TextStyle(fontStyle: FontStyle.italic),
                         ),
                       ),
-                      DataColumn(
-                        label: Expanded(
-                          child: Text(
-                            'Gender',
-                            style: TextStyle(fontStyle: FontStyle.italic),
-                          ),
+                    ),
+                    DataColumn(
+                      label: Expanded(
+                        child: Text(
+                          'Gender',
+                          style: TextStyle(fontStyle: FontStyle.italic),
                         ),
                       ),
-                    ],
-                    rows: Map.fromIterable(_visitorList)
-                        .values
-                        .map((e) => DataRow(cells: [
-                              DataCell(Text(e.date!)),
-                              DataCell(Text(
-                                  double.parse(e.acc!).toStringAsFixed(7))),
-                              DataCell(Text(e.ageRange!)),
-                              DataCell(
-                                Text(e.gender!),
-                              )
-                            ]))
-                        .toList(),
-                  );
-                } else {
-                  return const Center(
-                    child: CircularProgressIndicator(),
-                  );
-                }
-              },
-            ),
+                    ),
+                  ],
+                  rows: Map.fromIterable(_visitorList)
+                      .values
+                      .map((e) => DataRow(cells: [
+                            DataCell(Text(e.date!)),
+                            DataCell(
+                                Text(double.parse(e.acc!).toStringAsFixed(7))),
+                            DataCell(Text(e.ageRange!)),
+                            DataCell(
+                              Text(e.gender!),
+                            )
+                          ]))
+                      .toList(),
+                );
+              } else {
+                return const Center(
+                  child: CircularProgressIndicator(),
+                );
+              }
+            },
           )
         ])));
   }
