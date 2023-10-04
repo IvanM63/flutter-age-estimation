@@ -42,7 +42,7 @@ class _DataPageState extends State<DataPage> {
 
   @override
   Widget build(BuildContext context) {
-    print(_visitorList);
+    //print(_visitorList);
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,

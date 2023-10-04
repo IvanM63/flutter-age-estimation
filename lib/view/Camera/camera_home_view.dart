@@ -18,7 +18,7 @@ class _CameraHomeState extends State<CameraHome> {
   //Plasa Controller
   final PlasaController _plasaController = Get.put(PlasaController());
 
-  List<Plasa> _foundPlasa = [];
+  List<Plasa> _foundPlasa = <Plasa>[].obs;
 
   @override
   void initState() {
@@ -50,7 +50,6 @@ class _CameraHomeState extends State<CameraHome> {
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
         backgroundColor: Color.fromARGB(255, 237, 2, 38),
-        key: GlobalKey(),
         floatingActionButton: FloatingActionButton(
           onPressed: () {
             //navigate to add plasa
@@ -126,8 +125,8 @@ class _CameraHomeState extends State<CameraHome> {
                 const SizedBox(
                   height: 20,
                 ),
-                Expanded(
-                  child: ListView.builder(
+                Expanded(child: Obx(() {
+                  return ListView.builder(
                       itemCount: _foundPlasa.length,
                       itemBuilder: (context, index) {
                         return Padding(
@@ -137,8 +136,8 @@ class _CameraHomeState extends State<CameraHome> {
                               index: index,
                               plasaController: _plasaController,
                             ));
-                      }),
-                )
+                      });
+                }))
               ],
             ),
           ),

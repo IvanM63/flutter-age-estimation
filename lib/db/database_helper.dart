@@ -86,7 +86,7 @@ class DBHelper {
 
   //update plasa
   static Future<int> updatePlasa(Plasa? plasa) async {
-    //print("insert function terrpanggil");
+    print(plasa!.name);
     return await _db!.update(_tablePlasas, plasa!.toJson(),
         where: "id=?", whereArgs: [plasa.id]);
   }
@@ -111,8 +111,11 @@ class DBHelper {
     return await _db!.query(_tableVisitors);
   }
 
-  static delete(Plasa plasa) async {
+  static deletePlasa(Plasa plasa) async {
+    //delete plasa with visitor
     await _db!.delete(_tablePlasas, where: "id=?", whereArgs: [plasa.id]);
+    await _db!
+        .delete(_tableVisitors, where: "plasa_id=?", whereArgs: [plasa.id]);
   }
 
   static update(int id) async {

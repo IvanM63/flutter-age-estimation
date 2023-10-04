@@ -10,17 +10,21 @@ import 'package:path/path.dart' as Path;
 import 'package:path_provider/path_provider.dart';
 
 import '../../../controller/plasa_controller.dart';
-import 'button.dart';
-import 'input_field.dart';
+import '../Add Plasa/button.dart';
+import '../Add Plasa/input_field.dart';
 
-class AddPlasa extends StatefulWidget {
-  const AddPlasa({super.key});
+class EditPlasa extends StatefulWidget {
+  const EditPlasa({super.key, required this.index, plasaController})
+      : _plasaController = plasaController;
+
+  final int index;
+  final PlasaController _plasaController;
 
   @override
-  State<AddPlasa> createState() => _AddPlasaState();
+  State<EditPlasa> createState() => _EditPlasaState();
 }
 
-class _AddPlasaState extends State<AddPlasa> {
+class _EditPlasaState extends State<EditPlasa> {
   //Plasa Controller
   final PlasaController _plasaController = Get.put(PlasaController());
   //Text Controller
@@ -28,6 +32,21 @@ class _AddPlasaState extends State<AddPlasa> {
   final TextEditingController _jalanController = TextEditingController();
   final TextEditingController _kecamatanController = TextEditingController();
   final TextEditingController _kotaController = TextEditingController();
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    setState(() {
+      _nameController.text = _plasaController.plasaList[widget.index].name!;
+      _jalanController.text = _plasaController.plasaList[widget.index].jalan!;
+      _kecamatanController.text =
+          _plasaController.plasaList[widget.index].kecamatan!;
+      _kotaController.text = _plasaController.plasaList[widget.index].kota!;
+      _selectedImage = File(_plasaController.plasaList[widget.index].image!);
+    });
+    print(_plasaController.plasaList[widget.index].id!);
+    super.initState();
+  }
 
   //Image File
   File? _selectedImage;
@@ -43,7 +62,7 @@ class _AddPlasaState extends State<AddPlasa> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text("Add New Plasa",
+                Text("Edit Plasa",
                     style: Theme.of(context)
                         .textTheme
                         .titleLarge!
@@ -74,29 +93,13 @@ class _AddPlasaState extends State<AddPlasa> {
                             color: Colors.grey.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(10)),
                         child: Center(
-                          child: _selectedImage != null
-                              ? Image.file(_selectedImage!)
-                              : Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      Icons.camera_alt,
-                                      size: 50,
-                                      color: Colors.grey,
-                                    ),
-                                    const SizedBox(
-                                      height: 10,
-                                    ),
-                                    Text(
-                                      "Add Image",
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodyLarge!
-                                          .copyWith(color: Colors.grey),
-                                    )
-                                  ],
-                                ),
-                        ),
+                            child: _selectedImage != null
+                                ? Image.file(_selectedImage!)
+                                : Image.file(
+                                    File(_plasaController
+                                        .plasaList[widget.index].image!),
+                                    fit: BoxFit.fill,
+                                  )),
                       ),
                     ),
                   ),
@@ -152,10 +155,25 @@ class _AddPlasaState extends State<AddPlasa> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    MyButton(
-                        label: "Create Plasa",
-                        icon: Icons.add_task,
-                        onPressed: _validateForm),
+                    Expanded(
+                        child: MyButton(
+                            label: "Delete Plasa",
+                            onPressed: () {
+                              _dialogBuilder(context);
+                            },
+                            icon: Icons.delete,
+                            color: Colors.pinkAccent)),
+                    const SizedBox(
+                      width: 10,
+                    ),
+                    Expanded(
+                      child: MyButton(
+                        label: "Edit Plasa",
+                        icon: Icons.edit,
+                        onPressed: _validateForm,
+                        color: Colors.greenAccent,
+                      ),
+                    ),
                   ],
                 )
               ],
@@ -177,7 +195,7 @@ class _AddPlasaState extends State<AddPlasa> {
     });
   }
 
-  _addTaskToDb() async {
+  _updatePlasaToDb() async {
     File tmpFile = File(_selectedImage!.path);
     final Directory directory = await getApplicationDocumentsDirectory();
     final String path = directory.path;
@@ -186,14 +204,16 @@ class _AddPlasaState extends State<AddPlasa> {
     final String fileExtension = Path.extension(_selectedImage!.path);
     tmpFile = await tmpFile.copy('$path/$fileName$fileExtension');
 
-    var value = await _plasaController.addPlasa(
-        plasa: Plasa(
-            name: _nameController.text,
-            jalan: _jalanController.text,
-            kecamatan: _kecamatanController.text,
-            kota: _kotaController.text,
-            pengunjung: '0',
-            image: _selectedImage!.path));
+    Plasa plasa = Plasa(
+        id: _plasaController.plasaList[widget.index].id,
+        name: _nameController.text,
+        jalan: _jalanController.text,
+        kecamatan: _kecamatanController.text,
+        kota: _kotaController.text,
+        pengunjung: _plasaController.plasaList[widget.index].pengunjung,
+        image: tmpFile.path);
+    var value = await _plasaController.updatePlasa(plasa: plasa);
+    setState(() {});
     //print("MY ID IS: " + "$value");
   }
 
@@ -204,7 +224,7 @@ class _AddPlasaState extends State<AddPlasa> {
         _kotaController.text.isNotEmpty &&
         _selectedImage != null) {
       //add data to database
-      _addTaskToDb();
+      _updatePlasaToDb();
       //refresh task list
       await _plasaController.getAllPlasa();
       //Navigate back to home page
@@ -219,6 +239,43 @@ class _AddPlasaState extends State<AddPlasa> {
         ),
       );
     }
+  }
+
+  _dialogBuilder(BuildContext context) {
+    return showDialog<void>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Konfirmasi'),
+          content: Text("Anda yakin ingin menghapus plasa ini?"),
+          actions: <Widget>[
+            TextButton(
+              style: TextButton.styleFrom(
+                textStyle: Theme.of(context).textTheme.labelLarge,
+              ),
+              child: const Text('Ya'),
+              onPressed: () {
+                _plasaController
+                    .delete(_plasaController.plasaList[widget.index]);
+                Navigator.of(context).pop();
+                Navigator.of(context).pop();
+                Navigator.of(context).pop();
+                setState(() {});
+              },
+            ),
+            TextButton(
+              style: TextButton.styleFrom(
+                textStyle: Theme.of(context).textTheme.labelLarge,
+              ),
+              child: const Text('Tidak'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 }
 

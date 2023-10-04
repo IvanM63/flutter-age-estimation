@@ -216,7 +216,7 @@ class _FaceDetectorViewState extends State<FaceDetectorView>
     //Update plasa pengunjung
     var plasa = widget._plasaController.plasaList[widget.index];
     plasa.pengunjung = (int.parse(plasa.pengunjung!) + 1).toString();
-    widget._plasaController.updatePlasa(plasa);
+    widget._plasaController.updatePlasa(plasa: plasa);
     //print("MY ID IS: " + "$value");
   }
 

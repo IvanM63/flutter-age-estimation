@@ -15,7 +15,7 @@ class VisitorController extends GetxController {
   getAllVisitor() async {
     //print("get all plasa function terpanggil");
     List<Map<String, dynamic>> _visitorList = await DBHelper.queryVisitor();
-    print(_visitorList);
+    //print(_visitorList);
     visitorList
         .assignAll(_visitorList.map((data) => Visitor.fromJson(data)).toList());
   }

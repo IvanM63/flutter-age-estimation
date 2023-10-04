@@ -12,7 +12,7 @@ Future<void> main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   await Firebase.initializeApp;
-  WidgetsFlutterBinding.ensureInitialized();
+
   final dbHelper = DBHelper.instance;
   dbHelper.database;
   runApp(const MyApp());

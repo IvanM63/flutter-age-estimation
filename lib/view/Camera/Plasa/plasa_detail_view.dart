@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:age_recog_pkl/models/visitor.model.dart';
+import 'package:age_recog_pkl/view/Camera/Plasa/edit_plasa_view.dart';
 import 'package:age_recog_pkl/view/Camera/face_detector_view.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -110,7 +111,7 @@ class _PlasaDetailState extends State<PlasaDetail> {
   @override
   Widget build(BuildContext context) {
     //print(DateFormat("yyyy-MM-dd").format(DateTime.now()));
-
+    //print(widget._plasaController.plasaList[widget.index].pengunjung!);
     // print(_quickInfo);
     return Scaffold(
         appBar: _appBar(),
@@ -153,7 +154,16 @@ class _PlasaDetailState extends State<PlasaDetail> {
                 Expanded(
                     child: MyButton(
                   label: "Edit",
-                  onPressed: () {},
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => EditPlasa(
+                            index: widget.index,
+                            plasaController: widget._plasaController),
+                      ),
+                    );
+                  },
                   icon: Icons.edit,
                 )),
                 const SizedBox(

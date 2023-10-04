@@ -15,6 +15,7 @@ class Plasa {
     this.jalan,
     this.kecamatan,
     this.kota,
+    this.pengunjung,
     this.image,
   });
 

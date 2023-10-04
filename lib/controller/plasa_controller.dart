@@ -20,6 +20,12 @@ class PlasaController extends GetxController {
         .assignAll(_plasaList.map((data) => Plasa.fromJson(data)).toList());
   }
 
+  //Return all plasa from database
+  Future<List<Plasa>> getPlasa() async {
+    List<Map<String, dynamic>> _plasaList = await DBHelper.queryPlasa();
+    return _plasaList.map((data) => Plasa.fromJson(data)).toList();
+  }
+
   //Get Plasa by id
   getPlasaById(int id) async {
     Plasa plasa = await DBHelper.getPlasaById(id);
@@ -31,11 +37,11 @@ class PlasaController extends GetxController {
   }
 
   delete(Plasa plasa) {
-    DBHelper.delete(plasa);
+    DBHelper.deletePlasa(plasa);
   }
 
-  void updatePlasa(Plasa plasa) async {
-    await DBHelper.updatePlasa(plasa);
+  Future<int> updatePlasa({Plasa? plasa}) async {
+    return await DBHelper.updatePlasa(plasa);
   }
 
   void completePlasa(int id) async {
