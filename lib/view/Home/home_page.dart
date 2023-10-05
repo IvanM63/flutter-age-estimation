@@ -144,62 +144,79 @@ class _HomePageState extends State<HomePage> {
   //Visitor Controller
   final VisitorController _visitorController = Get.put(VisitorController());
 
+  _getAllVisitors() async {
+    //Reset count
+    senin = 0;
+    selasa = 0;
+    rabu = 0;
+    kamis = 0;
+    jumat = 0;
+    sabtu = 0;
+
+    muda = 0;
+    setengahTua = 0;
+    tua = 0;
+
+    //For Pie Chart
+    await _visitorController.getAllVisitor();
+    List<Visitor> _visitorListTemp = _visitorController.visitorList.toList();
+    //print(_visitorListTemp.length);
+
+    for (var element in _visitorListTemp) {
+      //print(element);
+      if (element.ageRange! == "0-14yo") {
+        //muda++;
+      } else if (element.ageRange! == "15-40yo") {
+        muda++;
+      } else if (element.ageRange! == "41-60yo") {
+        setengahTua++;
+      } else {
+        tua++;
+      }
+
+      // Parse the formatted string into a DateTime object
+      DateTime parsedDate = DateFormat('yyyy-MM-dd').parse(element.date!);
+
+      // Convert the integer to a more human-readable format
+      String weekdayString = DateFormat('EEEE').format(parsedDate);
+
+      if (weekdayString == 'Friday') {
+        jumat++;
+      } else if (weekdayString == 'Thursday') {
+        kamis++;
+      } else if (weekdayString == 'Wednesday') {
+        rabu++;
+      } else if (weekdayString == 'Tuesday') {
+        selasa++;
+      } else if (weekdayString == 'Monday') {
+        senin++;
+      } else if (weekdayString == 'Saturday') {
+        sabtu++;
+      }
+
+      //print(weekdayString);
+    }
+
+    //print("CALLED");
+    //print(await _visitorController.visitorList[1].toJson());
+
+    //For day chart
+  }
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    //_getAllVisitors();
+    super.initState();
+  }
+
   @override
   Widget build(BuildContext context) {
     loadWhenFirstLoaded(BuildContext context) async {
       if (loading == true) {
         setState(() {
-          for (Map<String, String> tes in tess) {
-            if (DateFormat.EEEE().format(DateTime.parse(tes['tanggal']!)) ==
-                'Friday') {
-              setState(() {
-                jumat++;
-              });
-            } else if (DateFormat.EEEE()
-                    .format(DateTime.parse(tes['tanggal']!)) ==
-                'Thursday') {
-              kamis++;
-            } else if (DateFormat.EEEE()
-                    .format(DateTime.parse(tes['tanggal']!)) ==
-                'Wednesday') {
-              rabu++;
-            } else if (DateFormat.EEEE()
-                    .format(DateTime.parse(tes['tanggal']!)) ==
-                'Tuesday') {
-              selasa++;
-            } else if (DateFormat.EEEE()
-                    .format(DateTime.parse(tes['tanggal']!)) ==
-                'Monday') {
-              senin++;
-            } else if (DateFormat.EEEE()
-                    .format(DateTime.parse(tes['tanggal']!)) ==
-                'Saturday') {
-              sabtu++;
-            }
+          //_getAllVisitors();
 
-            for (Map<String, String> tes in tess) {
-              if (int.parse(tes['umur']!) < 25) {
-                muda++;
-              } else if (int.parse(tes['umur']!) < 45) {
-                setengahTua++;
-              } else {
-                tua++;
-              }
-            }
-            //print(_visitorController.visitorList.length);
-            //iterable for _visitorController.visitorList
-            // for (Visitor visitor in _visitorController.visitorList) {
-            //   print(visitor);
-            //   if (int.parse(visitor.ageRange!) == "0-14yo") {
-            //     muda++;
-            //   } else if (int.parse(visitor.ageRange!) == "15-40yo") {
-            //     muda++;
-            //     setengahTua++;
-            //   } else {
-            //     tua++;
-            //   }
-            // }
-          }
           loading = false;
         });
       } else {}
@@ -208,27 +225,36 @@ class _HomePageState extends State<HomePage> {
     Future.delayed(Duration.zero, () => loadWhenFirstLoaded(context));
     //print(_visitorController.visitorList.length);
     return Scaffold(
-      appBar: AppBar(
-        title: Center(
-          child: const Text(
-            "Data Visualization",
-            style: TextStyle(color: Color.fromARGB(255, 255, 255, 255)),
+        appBar: AppBar(
+          title: Center(
+            child: const Text(
+              "Data Visualization",
+              style: TextStyle(color: Color.fromARGB(255, 255, 255, 255)),
+            ),
           ),
+          backgroundColor: const Color.fromARGB(255, 237, 2, 38),
+          shadowColor: const Color.fromARGB(100, 0, 0, 0),
+          elevation: 50,
         ),
-        backgroundColor: const Color.fromARGB(255, 237, 2, 38),
-        shadowColor: const Color.fromARGB(100, 0, 0, 0),
-        elevation: 50,
-      ),
-      key: GlobalKey(),
-      body: Center(
-        child: Column(
-          children: <Widget>[
-            _graph1(context),
-            _graph2(context),
-          ],
-        ),
-      ),
-    );
+        key: GlobalKey(),
+        body: Center(
+          child: FutureBuilder<void>(
+              future: _getAllVisitors(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.done) {
+                  return Column(
+                    children: <Widget>[
+                      _graph1(context),
+                      _graph2(context),
+                    ],
+                  );
+                } else {
+                  return const Center(
+                    child: CircularProgressIndicator(),
+                  );
+                }
+              }),
+        ));
   }
 
   Widget _graph1(BuildContext context) {

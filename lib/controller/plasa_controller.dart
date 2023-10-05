@@ -27,9 +27,10 @@ class PlasaController extends GetxController {
   }
 
   //Get Plasa by id
-  getPlasaById(int id) async {
+  Future<String> getPlasaById(int id) async {
     Plasa plasa = await DBHelper.getPlasaById(id);
-    return plasa;
+    //print(plasa.name!);
+    return plasa.name!;
   }
 
   Future<int> addPlasa({Plasa? plasa}) async {

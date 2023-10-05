@@ -11,6 +11,7 @@ import 'package:firebase_database/firebase_database.dart';
 
 import '../../controller/visitor_controller.dart';
 import '../../models/visitor.model.dart';
+import '../../models/visitor_plasa.model.dart';
 
 class DataPage extends StatefulWidget {
   const DataPage({super.key});
@@ -20,7 +21,7 @@ class DataPage extends StatefulWidget {
 }
 
 class _DataPageState extends State<DataPage> {
-  List<Visitor> _visitorList = [];
+  List<VisitorPlasa> _visitorList = [];
 
   //Visitor Controller
   final VisitorController _visitorController = Get.put(VisitorController());
@@ -29,10 +30,24 @@ class _DataPageState extends State<DataPage> {
   _getAllVisitors() async {
     await _visitorController.getAllVisitor();
     List<Visitor> _visitorListTemp = _visitorController.visitorList.toList();
+    //print(_visitorListTemp.length);
 
-    Map.fromIterable(_visitorListTemp).values.forEach((element) {
-      _visitorList.add(element);
-    });
+    for (var element in _visitorListTemp) {
+      var plasaNameTemp =
+          await _plasaController.getPlasaById(element.plasa_id!);
+      VisitorPlasa vpTemp = VisitorPlasa(
+        acc: element.acc,
+        ageRange: element.ageRange,
+        date: element.date,
+        gender: element.gender,
+        id: element.id,
+        plasaName: plasaNameTemp,
+        time: element.time,
+      );
+      _visitorList.add(vpTemp);
+    }
+
+    print(_visitorList.length);
 
     //print("CALLED");
     //print(await _visitorController.visitorList[1].toJson());
@@ -41,8 +56,16 @@ class _DataPageState extends State<DataPage> {
   }
 
   @override
+  void initState() {
+    // TODO: implement initState
+    //_getAllVisitors();
+    super.initState();
+  }
+
+  @override
   Widget build(BuildContext context) {
     //print(_visitorList);
+
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
@@ -100,8 +123,7 @@ class _DataPageState extends State<DataPage> {
                     .values
                     .map((e) => DataRow(cells: [
                           DataCell(Text(e.date!)),
-                          DataCell(Text(_plasaController
-                              .plasaList[e.plasa_id! - 1].name!)),
+                          DataCell(Text(e.plasaName!)),
                           DataCell(Text(e.ageRange!)),
                           DataCell(
                             Text(e.gender!),
