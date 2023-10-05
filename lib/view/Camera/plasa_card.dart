@@ -29,7 +29,7 @@ class PlasaCard extends StatelessWidget {
           );
         },
         child: Ink(
-          height: 121,
+          height: 151,
           //margin: const EdgeInsets.only(bottom: 10),
           decoration: BoxDecoration(
               color: Colors.white,

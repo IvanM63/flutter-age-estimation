@@ -1,11 +1,14 @@
 import 'package:age_recog_pkl/view/Camera/face_detector_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
+import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 
 import 'package:syncfusion_flutter_charts/charts.dart';
 
+import '../../controller/visitor_controller.dart';
 import '../../models/screen_params.dart';
+import '../../models/visitor.model.dart';
 
 List<Map<String, String>> tess = [
   {
@@ -114,11 +117,11 @@ int setengahTua = 0;
 int tua = 0;
 
 final List<DummyType> chartData = [
-  DummyType("Isnin", senin),
+  DummyType("Senin", senin),
   DummyType("Selasa", selasa),
-  DummyType("Rawu", rabu),
-  DummyType("K'mis", kamis),
-  DummyType("Juma'at", jumat),
+  DummyType("Rabu", rabu),
+  DummyType("Kamis", kamis),
+  DummyType("Jumat", jumat),
   DummyType("Sabtu", sabtu)
 ];
 
@@ -137,6 +140,9 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   bool firstTime = true;
+
+  //Visitor Controller
+  final VisitorController _visitorController = Get.put(VisitorController());
 
   @override
   Widget build(BuildContext context) {
@@ -170,6 +176,7 @@ class _HomePageState extends State<HomePage> {
                 'Saturday') {
               sabtu++;
             }
+
             for (Map<String, String> tes in tess) {
               if (int.parse(tes['umur']!) < 25) {
                 muda++;
@@ -179,6 +186,19 @@ class _HomePageState extends State<HomePage> {
                 tua++;
               }
             }
+            //print(_visitorController.visitorList.length);
+            //iterable for _visitorController.visitorList
+            // for (Visitor visitor in _visitorController.visitorList) {
+            //   print(visitor);
+            //   if (int.parse(visitor.ageRange!) == "0-14yo") {
+            //     muda++;
+            //   } else if (int.parse(visitor.ageRange!) == "15-40yo") {
+            //     muda++;
+            //     setengahTua++;
+            //   } else {
+            //     tua++;
+            //   }
+            // }
           }
           loading = false;
         });
@@ -186,12 +206,14 @@ class _HomePageState extends State<HomePage> {
     }
 
     Future.delayed(Duration.zero, () => loadWhenFirstLoaded(context));
-
+    //print(_visitorController.visitorList.length);
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          "Age Recognition",
-          style: TextStyle(color: Color.fromARGB(255, 255, 255, 255)),
+        title: Center(
+          child: const Text(
+            "Data Visualization",
+            style: TextStyle(color: Color.fromARGB(255, 255, 255, 255)),
+          ),
         ),
         backgroundColor: const Color.fromARGB(255, 237, 2, 38),
         shadowColor: const Color.fromARGB(100, 0, 0, 0),
@@ -214,7 +236,7 @@ class _HomePageState extends State<HomePage> {
       return const CircularProgressIndicator();
     } else {
       return SfCartesianChart(
-          title: ChartTitle(text: 'TesChart'),
+          title: ChartTitle(text: 'Pengunjung Berdasarkan Hari'),
           primaryXAxis: CategoryAxis(),
           palette: const [
             Color.fromARGB(255, 237, 2, 38)
@@ -234,7 +256,7 @@ class _HomePageState extends State<HomePage> {
       return const CircularProgressIndicator();
     } else {
       return SfCircularChart(
-          title: ChartTitle(text: 'TesChart'),
+          title: ChartTitle(text: 'Pengunjung Berdasarkan Umur'),
           palette: const [
             Color.fromARGB(255, 237, 2, 38),
             Color.fromARGB(255, 253, 53, 83),

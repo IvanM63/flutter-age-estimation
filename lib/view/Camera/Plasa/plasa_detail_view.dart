@@ -170,6 +170,7 @@ class _PlasaDetailState extends State<PlasaDetail> {
                   width: 10,
                 ),
                 Expanded(
+                  flex: 2,
                   child: MyButton(
                       label: "Ambil Gambar",
                       icon: Icons.camera,
